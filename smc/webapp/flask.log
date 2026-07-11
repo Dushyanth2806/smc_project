@@ -1,0 +1,152 @@
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 950-395-735
+127.0.0.1 - - [10/Jul/2026 21:42:41] "GET /api/model/status HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:42:50] "POST /api/train/csv HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:42:51] "POST /api/predict/csv HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:43:02] "POST /api/predict/yfinance HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:43:25] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:43:25] "GET /static/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:43:25] "GET /static/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:43:40] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:44:06] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:49:56] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:49:56] "GET /static/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:49:57] "GET /static/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:49:59] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Jul/2026 21:49:59] "GET /api/model/status HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:50:10] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:50:11] "GET /static/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:50:11] "GET /static/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:50:13] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [10/Jul/2026 21:50:13] "GET /api/model/status HTTP/1.1" 200 -
+C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py:113: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df["time"] = pd.to_datetime(df[time_col])
+Traceback (most recent call last):
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\app.py", line 76, in train_csv
+    metrics = ml_engine.train_model(raw, horizon=horizon, source="csv_upload")
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 267, in train_model
+    X, y = _prepare_training_frame(raw_df, horizon)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 250, in _prepare_training_frame
+    df = normalize_ohlcv_dataframe(raw_df)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 125, in normalize_ohlcv_dataframe
+    raise ValueError(
+    ...<2 lines>...
+    )
+ValueError: Data is missing required columns ['open', 'high', 'low', 'close', 'volume']. Found columns: ['52_weeks_high', '52_weeks_low', 'close_price', 'date', 'high_price', 'low_price', 'number_of_trades', 'open_price', 'prev._close', 'series', 'settlement_date', 'symbol', 'time', 'total_traded_quantity', 'total_traded_value_in_rs.']
+127.0.0.1 - - [10/Jul/2026 21:50:32] "POST /api/train/csv HTTP/1.1" 400 -
+Traceback (most recent call last):
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\app.py", line 76, in train_csv
+    metrics = ml_engine.train_model(raw, horizon=horizon, source="csv_upload")
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 267, in train_model
+    X, y = _prepare_training_frame(raw_df, horizon)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 250, in _prepare_training_frame
+    df = normalize_ohlcv_dataframe(raw_df)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 113, in normalize_ohlcv_dataframe
+    df["time"] = pd.to_datetime(df[time_col])
+                 ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\venv\Lib\site-packages\pandas\core\tools\datetimes.py", line 1040, in to_datetime
+    values = convert_listlike(arg._values, format)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\venv\Lib\site-packages\pandas\core\tools\datetimes.py", line 435, in _convert_listlike_datetimes
+    return _array_strptime_with_fallback(arg, name, utc, format, exact, errors)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\venv\Lib\site-packages\pandas\core\tools\datetimes.py", line 470, in _array_strptime_with_fallback
+    result, tz_out = array_strptime(arg, fmt, exact=exact, errors=errors, utc=utc)
+                     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/tslibs/strptime.pyx", line 563, in pandas._libs.tslibs.strptime.array_strptime
+  File "pandas/_libs/tslibs/strptime.pyx", line 511, in pandas._libs.tslibs.strptime.array_strptime
+  File "pandas/_libs/tslibs/strptime.pyx", line 617, in pandas._libs.tslibs.strptime._parse_with_format
+ValueError: time data "02-12-2020" doesn't match format "%m/%d/%Y". You might want to try:
+    - passing `format` if your strings have a consistent format;
+    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;
+    - passing `format='mixed'`, and the format will be inferred for each element individually. You might want to use `dayfirst` alongside this.
+127.0.0.1 - - [10/Jul/2026 21:50:40] "POST /api/train/csv HTTP/1.1" 400 -
+127.0.0.1 - - [10/Jul/2026 21:51:11] "POST /api/predict/yfinance HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:51:14] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:51:14] "GET /static/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [10/Jul/2026 21:51:14] "GET /static/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [10/Jul/2026 21:51:15] "GET /api/model/status HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:51:20] "POST /api/predict/yfinance HTTP/1.1" 200 -
+AAPL: Period '5' is invalid, must be one of: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
+
+1 Failed download:
+['AAPL']: Period '5' is invalid, must be one of: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
+Traceback (most recent call last):
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\app.py", line 94, in predict_yfinance
+    raw = ml_engine.fetch_yfinance(ticker, period=period, interval=interval)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 146, in fetch_yfinance
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: yfinance returned no data for ticker='AAPL', period='5', interval='15m'. Check the symbol and that the period/interval combination is valid (Yahoo limits intraday history).
+127.0.0.1 - - [10/Jul/2026 21:51:48] "POST /api/predict/yfinance HTTP/1.1" 400 -
+AAPL: Period '5m' is invalid, must be one of: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
+
+1 Failed download:
+['AAPL']: Period '5m' is invalid, must be one of: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
+Traceback (most recent call last):
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\app.py", line 94, in predict_yfinance
+    raw = ml_engine.fetch_yfinance(ticker, period=period, interval=interval)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 146, in fetch_yfinance
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: yfinance returned no data for ticker='AAPL', period='5m', interval='15m'. Check the symbol and that the period/interval combination is valid (Yahoo limits intraday history).
+127.0.0.1 - - [10/Jul/2026 21:51:53] "POST /api/predict/yfinance HTTP/1.1" 400 -
+127.0.0.1 - - [10/Jul/2026 21:51:57] "POST /api/predict/yfinance HTTP/1.1" 200 -
+Traceback (most recent call last):
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\app.py", line 106, in predict_csv
+    result = ml_engine.predict(raw)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 361, in predict
+    df = normalize_ohlcv_dataframe(raw_df)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 113, in normalize_ohlcv_dataframe
+    df["time"] = pd.to_datetime(df[time_col])
+                 ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\venv\Lib\site-packages\pandas\core\tools\datetimes.py", line 1040, in to_datetime
+    values = convert_listlike(arg._values, format)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\venv\Lib\site-packages\pandas\core\tools\datetimes.py", line 435, in _convert_listlike_datetimes
+    return _array_strptime_with_fallback(arg, name, utc, format, exact, errors)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\venv\Lib\site-packages\pandas\core\tools\datetimes.py", line 470, in _array_strptime_with_fallback
+    result, tz_out = array_strptime(arg, fmt, exact=exact, errors=errors, utc=utc)
+                     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/tslibs/strptime.pyx", line 563, in pandas._libs.tslibs.strptime.array_strptime
+  File "pandas/_libs/tslibs/strptime.pyx", line 511, in pandas._libs.tslibs.strptime.array_strptime
+  File "pandas/_libs/tslibs/strptime.pyx", line 617, in pandas._libs.tslibs.strptime._parse_with_format
+ValueError: time data "02-12-2020" doesn't match format "%m/%d/%Y". You might want to try:
+    - passing `format` if your strings have a consistent format;
+    - passing `format='ISO8601'` if your strings are all ISO8601 but not necessarily in exactly the same format;
+    - passing `format='mixed'`, and the format will be inferred for each element individually. You might want to use `dayfirst` alongside this.
+127.0.0.1 - - [10/Jul/2026 21:52:14] "POST /api/predict/csv HTTP/1.1" 400 -
+127.0.0.1 - - [10/Jul/2026 21:52:23] "POST /api/train/yfinance HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:53:05] "POST /api/train/csv HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:53:18] "POST /api/train/yfinance HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:53:23] "POST /api/train/yfinance HTTP/1.1" 200 -
+C:\Users\ADMIN\Downloads\smc_project\smc\venv\Lib\site-packages\sklearn\utils\parallel.py:161: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001D921C127A0>
+  for k, v in zip(warning_filter_keys, filter_args)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+127.0.0.1 - - [10/Jul/2026 21:53:26] "POST /api/train/yfinance HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:53:31] "POST /api/train/yfinance HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:53:45] "POST /api/train/yfinance HTTP/1.1" 200 -
+$AAPL: possibly delisted; no price data found  (period=600d) (Yahoo error = "15m data not available for startTime=1731860627 and endTime=1783700627. The requested range must be within the last 60 days.")
+
+1 Failed download:
+['AAPL']: possibly delisted; no price data found  (period=600d) (Yahoo error = "15m data not available for startTime=1731860627 and endTime=1783700627. The requested range must be within the last 60 days.")
+Traceback (most recent call last):
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\app.py", line 63, in train_yfinance
+    raw = ml_engine.fetch_yfinance(ticker, period=period, interval=interval)
+  File "C:\Users\ADMIN\Downloads\smc_project\smc\webapp\ml_engine.py", line 146, in fetch_yfinance
+    raise ValueError(
+    ...<3 lines>...
+    )
+ValueError: yfinance returned no data for ticker='AAPL', period='600d', interval='15m'. Check the symbol and that the period/interval combination is valid (Yahoo limits intraday history).
+127.0.0.1 - - [10/Jul/2026 21:53:51] "POST /api/train/yfinance HTTP/1.1" 400 -
+127.0.0.1 - - [10/Jul/2026 21:54:02] "POST /api/train/yfinance HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:54:06] "POST /api/predict/yfinance HTTP/1.1" 200 -
+127.0.0.1 - - [10/Jul/2026 21:54:16] "POST /api/predict/csv HTTP/1.1" 200 -
+ * Detected change in 'C:\\Users\\ADMIN\\Downloads\\smc_project\\smc\\market_structure.py', reloading

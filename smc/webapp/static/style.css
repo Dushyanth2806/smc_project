@@ -1,0 +1,176 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --border: #2a2f3a;
+  --text: #e6e9ef;
+  --muted: #8b93a5;
+  --accent: #4f8cff;
+  --green: #22c55e;
+  --red: #ef4444;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0 0 4rem;
+}
+
+header {
+  padding: 2rem 2rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+.subtitle { color: var(--muted); margin: 0; }
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+
+.panel h2 { margin-top: 0; font-size: 1.05rem; }
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input, select {
+  background: #0c0e12;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.95rem;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  height: fit-content;
+}
+
+button:hover { filter: brightness(1.1); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.hint { color: var(--muted); font-size: 0.82rem; margin: 0.75rem 0 0; }
+
+.status { min-height: 1.2rem; font-size: 0.9rem; color: var(--muted); }
+.status.error { color: var(--red); }
+.status.ok { color: var(--green); }
+
+.hidden { display: none; }
+
+table.metrics-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+table.metrics-table th, table.metrics-table td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  text-align: right;
+}
+table.metrics-table th:first-child, table.metrics-table td:first-child { text-align: left; }
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.badge.NONE { background: #2a2f3a; color: var(--muted); }
+.badge.BULLISH_BOS, .badge.BULLISH_CHOCH { background: rgba(34,197,94,0.15); color: var(--green); }
+.badge.BEARISH_BOS, .badge.BEARISH_CHOCH { background: rgba(239,68,68,0.15); color: var(--red); }
+
+.chart-toggles { align-items: center; margin-bottom: 0.75rem; }
+
+button.toggle {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+button.toggle.active {
+  background: rgba(79,140,255,0.15);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+#chart { width: 100%; height: 620px; }
+
+.table-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: #0c0e12;
+  z-index: 1;
+}
+.table-scroll th, .table-scroll td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+.table-scroll th:first-child, .table-scroll td:first-child { text-align: left; }
+.table-scroll tr.latest-row td { background: rgba(79,140,255,0.08); }
+
+#live-indicator.live-on { color: var(--green); }
+#live-indicator.live-on::before { content: "\25CF "; }
+
+.forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.forecast-grid .cell {
+  background: #0c0e12;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+.forecast-grid .cell .label { color: var(--muted); font-size: 0.75rem; }
+.forecast-grid .cell .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.2rem; }

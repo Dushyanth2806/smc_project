@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SMC BOS/CHoCH Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <header>
+    <h1>BOS / CHoCH Predictor</h1>
+    <p class="subtitle">Train a model on Smart-Money structure breaks, then forecast the next bar.</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>1. Train from TradingView</h2>
+      <div class="row">
+        <label>Symbol <input id="train-tv-symbol" type="text" value="INFY" /></label>
+        <label>Exchange <input id="train-tv-exchange" type="text" value="NSE" /></label>
+        <label>Interval
+          <select id="train-tv-interval">
+            <option value="1m">1m</option>
+            <option value="5m">5m</option>
+            <option value="15m" selected>15m</option>
+            <option value="30m">30m</option>
+            <option value="1h">1h</option>
+            <option value="1d">1d</option>
+          </select>
+        </label>
+        <label>Bars <input id="train-tv-bars" type="number" min="100" value="2000" /></label>
+        <label>Horizon (bars ahead) <input id="train-tv-horizon" type="number" min="1" value="1" /></label>
+        <button id="train-tv-btn">Fetch &amp; Train</button>
+      </div>
+      <p class="hint">Pulls live OHLCV history from TradingView (via tvDatafeed), labels every bar with the rule-based BOS/CHoCH engine, and trains a classifier to predict the next bar's event.</p>
+    </section>
+
+    <section class="panel">
+      <h2>2. Train from an uploaded CSV</h2>
+      <div class="row">
+        <label>CSV file <input id="train-csv-file" type="file" accept=".csv" /></label>
+        <label>Horizon (bars ahead) <input id="train-csv-horizon" type="number" min="1" value="1" /></label>
+        <button id="train-csv-btn">Upload &amp; Train</button>
+      </div>
+      <p class="hint">
+        Required columns (case-insensitive): <code>open, high, low, close, volume</code>.
+        A <code>time</code>/<code>date</code> column is recommended. Extra columns (e.g. <code>prev_close</code>) are ignored — prev-close and other derived features are computed automatically.
+      </p>
+    </section>
+
+    <div id="train-status" class="status"></div>
+    <section id="train-results" class="panel hidden">
+      <h2>Training results</h2>
+      <div id="train-metrics"></div>
+    </section>
+
+    <section class="panel">
+      <h2>3. Predict / live chart</h2>
+      <div class="row">
+        <label>Symbol <input id="pred-tv-symbol" type="text" value="INFY" /></label>
+        <label>Exchange <input id="pred-tv-exchange" type="text" value="NSE" /></label>
+        <label>Interval
+          <select id="pred-tv-interval">
+            <option value="1m">1m</option>
+            <option value="5m">5m</option>
+            <option value="15m" selected>15m</option>
+            <option value="30m">30m</option>
+            <option value="1h">1h</option>
+            <option value="1d">1d</option>
+          </select>
+        </label>
+        <label>Bars <input id="pred-tv-bars" type="number" min="50" value="300" /></label>
+        <button id="pred-tv-btn">Fetch &amp; Predict</button>
+      </div>
+      <div class="row">
+        <label>or CSV <input id="pred-csv-file" type="file" accept=".csv" /></label>
+        <button id="pred-csv-btn">Upload &amp; Predict</button>
+      </div>
+      <div class="row">
+        <label>Refresh every (sec) <input id="live-interval" type="number" min="10" value="30" style="width:5rem;" /></label>
+        <button id="live-toggle-btn" type="button">Start live updates</button>
+        <span id="live-indicator" class="hint" style="margin:0;"></span>
+      </div>
+      <p class="hint">
+        "Live" re-fetches this symbol from TradingView on the interval above and refreshes the chart, table, and forecast automatically.
+        This uses the unofficial tvDatafeed client (not an official TradingView API) - anonymous access has reduced limits and can be rate-limited on very frequent polling; 30s+ is a safe default.
+      </p>
+    </section>
+
+    <div id="pred-status" class="status"></div>
+
+    <section id="forecast-card" class="panel hidden">
+      <h2>Next-bar forecast</h2>
+      <div id="forecast-content"></div>
+    </section>
+
+    <section class="panel">
+      <div class="row chart-toggles">
+        <span class="hint" style="margin:0;">Event type:</span>
+        <button id="toggle-bos" class="toggle active" type="button">BOS</button>
+        <button id="toggle-choch" class="toggle active" type="button">CHoCH</button>
+        <span class="hint" style="margin:0;">Structure:</span>
+        <button id="toggle-swing" class="toggle active" type="button">Swing (major)</button>
+        <button id="toggle-internal" class="toggle active" type="button">Internal (minor)</button>
+        <span class="hint" style="margin:0;">Model:</span>
+        <button id="toggle-pred" class="toggle active" type="button">Predicted next bar</button>
+      </div>
+      <p class="hint">
+        Every arrow points from the broken pivot to the bar that broke it.
+        <strong>Color = direction</strong> (green = bullish break, red = bearish break) — <em>not</em> BOS vs CHoCH.
+        <strong>Arrowhead + label = event type</strong>: BOS (solid arrowhead, continues the trend) vs CHoCH (hollow arrowhead, reverses the trend).
+        A green CHoCH is normal — it means price just broke upward while the trend had been bearish.
+        "Swing" = long (50-bar) pivot lookback, major structure, rare. "Internal" = short (5-bar) lookback, minor structure, frequent — both are real, rule-based BOS/CHoCH, just drawn smaller.
+      </p>
+      <div id="chart"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Dataset</h2>
+      <div class="row">
+        <span class="hint" style="margin:0;">Rows: <span id="data-row-count">0</span></span>
+        <label>Show
+          <select id="data-table-order">
+            <option value="desc" selected>Newest first</option>
+            <option value="asc">Oldest first</option>
+          </select>
+        </label>
+      </div>
+      <div id="data-table-wrap" class="table-scroll"></div>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

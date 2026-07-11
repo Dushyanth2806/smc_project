@@ -1,0 +1,10 @@
+pandas>=2.2
+numpy>=1.26
+scipy>=1.11
+plotly>=5.20
+flask>=3.0
+yfinance>=0.2.40
+tvdatafeed @ git+https://github.com/rongardF/tvdatafeed.git
+python-dotenv>=1.0
+scikit-learn>=1.4
+joblib>=1.3
