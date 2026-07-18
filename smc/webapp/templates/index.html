@@ -108,6 +108,8 @@
         <span class="hint" style="margin:0;">Zones:</span>
         <button id="toggle-ob" class="toggle active" type="button">Order Blocks</button>
         <button id="toggle-fvg" class="toggle active" type="button">Fair Value Gaps</button>
+        <button id="toggle-idm" class="toggle active" type="button">IDM</button>
+        <button id="toggle-orderflow" class="toggle active" type="button">OrderFlow (approx.)</button>
       </div>
       <p class="hint">
         Every arrow points from the broken pivot to the bar that broke it.
@@ -115,6 +117,9 @@
         <strong>Arrowhead + label = event type</strong>: BOS (solid arrowhead, continues the trend) vs CHoCH (hollow arrowhead, reverses the trend).
         A green CHoCH is normal — it means price just broke upward while the trend had been bearish.
         "Swing" = long (50-bar) pivot lookback, major structure, rare. "Internal" = short (5-bar) lookback, minor structure, frequent — both are real, rule-based BOS/CHoCH, just drawn smaller.
+        <strong>Order Blocks</strong> and <strong>Fair Value Gaps</strong> are rule-detected zones (order_blocks.py / fvg.py), same ground-truth guarantee as BOS/CHoCH.
+        <strong>IDM (Inducement, amber)</strong> is <em>not</em> in the original indicator — it's a heuristic we added: a minor structure break swept the "wrong" way shortly before a real BOS/CHoCH fires the other way.
+        <strong>OrderFlow</strong> is an <em>approximation</em> (no tick/bid-ask data exists here) derived from candle shape + relative volume — treat it as a rough proxy, not real order flow.
       </p>
       <div id="chart"></div>
     </section>

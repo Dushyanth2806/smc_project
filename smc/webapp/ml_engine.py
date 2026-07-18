@@ -460,6 +460,81 @@ def load_model_bundle() -> Optional[dict]:
     return joblib.load(MODEL_PATH)
 
 
+# --- IDM (Inducement) ------------------------------------------------
+# Not part of the original LuxAlgo Pine script - this is a derived
+# heuristic on top of its own structure_break_events, using the standard
+# ICT definition: a minor (internal-scope) structure break that gets
+# swept in the "wrong" direction shortly before a larger (swing-scope)
+# BOS/CHoCH fires in the opposite direction. Ground-truth-adjacent (built
+# entirely from the deterministic detector's own events, no ML), but it
+# is a rule *we* chose, not a reproduction of an original indicator.
+IDM_LOOKBACK_BARS = 15
+
+
+def _compute_idm_events(structure_break_events) -> list[dict]:
+    swing_events = [ev for ev in structure_break_events if not ev.internal]
+    internal_events = [ev for ev in structure_break_events if ev.internal]
+
+    idm_events = []
+    seen = set()
+    for swing in swing_events:
+        candidates = [
+            ev for ev in internal_events
+            if ev.bias != swing.bias
+            and ev.bar_index < swing.bar_index
+            and ev.bar_index >= swing.bar_index - IDM_LOOKBACK_BARS
+        ]
+        if not candidates:
+            continue
+        sweep = max(candidates, key=lambda e: e.bar_index)  # the one closest before the real break
+        key = (sweep.bar_index, sweep.pivot_level)
+        if key in seen:
+            continue
+        seen.add(key)
+        idm_events.append({
+            "time": pd.Timestamp(sweep.bar_time).isoformat(),
+            "level": float(sweep.pivot_level),
+            "direction": "bullish" if sweep.bias > 0 else "bearish",
+            "real_direction": "bullish" if swing.bias > 0 else "bearish",
+            "leads_to_time": pd.Timestamp(swing.bar_time).isoformat(),
+        })
+    return idm_events
+
+
+# --- OrderFlow (approximation) ----------------------------------------
+# Real order flow needs tick-by-tick trades / bid-ask data, which this
+# app never has (only OHLCV candles). This is a *proxy* built from where
+# the close sits within the bar's high-low range (close near the high =
+# buying pressure dominated the bar, close near the low = selling
+# pressure did) combined with relative volume, flagged only on bars
+# where both the imbalance and the volume are well above normal. It is
+# explicitly NOT real order flow / footprint / delta data - label it as
+# an approximation anywhere it's shown.
+ORDER_FLOW_VOL_WINDOW = 20
+ORDER_FLOW_STRENGTH_THRESHOLD = 1.2
+ORDER_FLOW_MIN_VOL_RATIO = 1.2
+
+
+def _compute_order_flow_events(out: pd.DataFrame) -> list[dict]:
+    high, low, close, volume = out["high"], out["low"], out["close"], out["volume"]
+    bar_range = (high - low).replace(0, np.nan)
+    delta_ratio = (2 * (close - low) / bar_range - 1).fillna(0.0)  # -1 (all selling) .. +1 (all buying)
+
+    avg_vol = volume.rolling(ORDER_FLOW_VOL_WINDOW, min_periods=5).mean()
+    vol_ratio = (volume / avg_vol).replace([np.inf, -np.inf], np.nan).fillna(1.0)
+    strength = delta_ratio.abs() * vol_ratio
+
+    mask = (strength > ORDER_FLOW_STRENGTH_THRESHOLD) & (vol_ratio > ORDER_FLOW_MIN_VOL_RATIO)
+    events = []
+    for t in out.index[mask]:
+        events.append({
+            "time": t.isoformat(),
+            "direction": "buy" if delta_ratio.loc[t] > 0 else "sell",
+            "strength": round(float(strength.loc[t]), 2),
+        })
+    return events
+
+
 def predict(raw_df: pd.DataFrame) -> dict:
     """Runs the trained model over `raw_df`, returning candlestick data,
     the rule-based (ground-truth) BOS/CHoCH markers, and the model's
@@ -566,6 +641,9 @@ def predict(raw_df: pd.DataFrame) -> dict:
         for fvg in smc_result.fair_value_gaps
     ]
 
+    idm_events = _compute_idm_events(smc_result.structure_break_events)
+    order_flow_events = _compute_order_flow_events(out)
+
     predictions = []
     for i, t in enumerate(out.index):
         if not valid_mask.iloc[i]:
@@ -594,6 +672,8 @@ def predict(raw_df: pd.DataFrame) -> dict:
         "actual_events": actual_events,
         "order_blocks": order_blocks,
         "fair_value_gaps": fair_value_gaps,
+        "idm_events": idm_events,
+        "order_flow_events": order_flow_events,
         "predictions": predictions,
         "next_bar_forecast": next_bar_forecast,
         "model_metrics": bundle["metrics"],

@@ -76,7 +76,10 @@ function renderForecast(forecast) {
 }
 
 let lastPredictionData = null;
-const chartToggles = { bos: true, choch: true, swing: true, internal: true, pred: true, ob: true, fvg: true };
+const chartToggles = {
+  bos: true, choch: true, swing: true, internal: true, pred: true,
+  ob: true, fvg: true, idm: true, orderflow: true,
+};
 
 function eventArrowColor(direction) {
   return direction === "bullish" ? "#22c55e" : "#ef4444";
@@ -177,6 +180,43 @@ function buildFVGShapes(fvgs) {
   return { shapes, annotations };
 }
 
+// IDM (Inducement) markers: not part of the original indicator - this is
+// a derived heuristic (see ml_engine.py's _compute_idm_events) flagging
+// a minor structure break swept in the "wrong" direction shortly before
+// a real, larger BOS/CHoCH fires the other way. Always drawn in amber so
+// it reads as visually distinct from the direction-colored BOS/CHoCH
+// arrows and OB/FVG zones.
+function buildIdmAnnotations(idmEvents) {
+  if (!chartToggles.idm) return [];
+  const color = "#f59e0b";
+  return idmEvents.map((e) => ({
+    x: e.time, y: e.level, xref: "x", yref: "y",
+    text: "IDM", showarrow: true, arrowhead: 2, arrowsize: 0.8, arrowwidth: 1,
+    arrowcolor: color, ax: 0, ay: e.direction === "bullish" ? 18 : -18,
+    font: { color, size: 9 },
+    bgcolor: "rgba(15,17,21,0.6)",
+  }));
+}
+
+// OrderFlow (approximation) markers: NOT real order flow (no tick/bid-ask
+// data available) - a proxy from close-within-range + relative volume,
+// flagged only on bars with an unusually strong imbalance. See
+// _compute_order_flow_events in ml_engine.py for the exact formula.
+function buildOrderFlowTrace(orderFlowEvents, priceByTime) {
+  if (!chartToggles.orderflow || !orderFlowEvents.length) return null;
+  return {
+    type: "scatter", mode: "markers", name: "OrderFlow (approx.)",
+    x: orderFlowEvents.map((e) => e.time),
+    y: orderFlowEvents.map((e) => priceByTime[e.time]),
+    text: orderFlowEvents.map((e) => `OF ${e.direction} (approx, strength ${e.strength})`),
+    marker: {
+      color: orderFlowEvents.map((e) => (e.direction === "buy" ? "#22c55e" : "#ef4444")),
+      symbol: orderFlowEvents.map((e) => (e.direction === "buy" ? "triangle-up" : "triangle-down")),
+      size: 8,
+    },
+  };
+}
+
 function buildChart() {
   const data = lastPredictionData;
   if (!data) return;
@@ -192,10 +232,11 @@ function buildChart() {
 
   const traces = [candleTrace];
 
+  const priceByTime = {};
+  c.time.forEach((t, i) => { priceByTime[t] = c.close[i]; });
+
   if (chartToggles.pred) {
     const predEvents = (data.predictions || []).filter((p) => p.predicted_label !== "NONE");
-    const priceByTime = {};
-    c.time.forEach((t, i) => { priceByTime[t] = c.close[i]; });
     traces.push({
       type: "scatter", mode: "markers", name: "Predicted next-bar event",
       x: predEvents.map((p) => p.time),
@@ -205,9 +246,13 @@ function buildChart() {
     });
   }
 
+  const orderFlowTrace = buildOrderFlowTrace(data.order_flow_events || [], priceByTime);
+  if (orderFlowTrace) traces.push(orderFlowTrace);
+
   const breakAnnotations = buildBreakAnnotations(data.actual_events || []);
   const obResult = buildOrderBlockShapes(data.order_blocks || []);
   const fvgResult = buildFVGShapes(data.fair_value_gaps || []);
+  const idmAnnotations = buildIdmAnnotations(data.idm_events || []);
 
   const layout = {
     paper_bgcolor: "#171a21", plot_bgcolor: "#171a21",
@@ -217,7 +262,7 @@ function buildChart() {
     margin: { t: 30, l: 50, r: 20, b: 40 },
     legend: { orientation: "h" },
     shapes: [...obResult.shapes, ...fvgResult.shapes],
-    annotations: [...breakAnnotations, ...obResult.annotations, ...fvgResult.annotations],
+    annotations: [...breakAnnotations, ...obResult.annotations, ...fvgResult.annotations, ...idmAnnotations],
   };
 
   Plotly.react("chart", traces, layout, { responsive: true });
@@ -243,6 +288,8 @@ wireToggle("toggle-internal", "internal");
 wireToggle("toggle-pred", "pred");
 wireToggle("toggle-ob", "ob");
 wireToggle("toggle-fvg", "fvg");
+wireToggle("toggle-idm", "idm");
+wireToggle("toggle-orderflow", "orderflow");
 
 async function refreshModelStatus() {
   try {
