@@ -78,7 +78,7 @@ function renderForecast(forecast) {
 let lastPredictionData = null;
 const chartToggles = {
   bos: true, choch: true, swing: true, internal: true, pred: true,
-  ob: true, fvg: true, idm: true, orderflow: true,
+  idm: true, orderflow: true,
 };
 
 function eventArrowColor(direction) {
@@ -115,7 +115,7 @@ function buildBreakAnnotations(events) {
         arrowwidth: isSwing ? 1.8 : 1.1,
         opacity: isSwing ? 1 : 0.85,
         arrowcolor: color,
-        text: e.type,
+        text: e.pivot_label ? `${e.type} (${e.pivot_label})` : e.type,
         font: { color, size: isSwing ? 11 : 9 },
         bgcolor: isSwing ? "rgba(15,17,21,0.8)" : "rgba(15,17,21,0.55)",
         bordercolor: isSwing ? color : "rgba(0,0,0,0)",
@@ -127,57 +127,27 @@ function buildBreakAnnotations(events) {
     });
 }
 
-// Order blocks and FVGs are drawn as shaded rectangles (the standard SMC
-// visual) rather than arrows, since they're zones/ranges, not single
-// points. Both are ground truth from the rule engine (order_blocks.py /
-// fvg.py) - not the ML model - same as the BOS/CHoCH arrows.
-function buildOrderBlockShapes(orderBlocks) {
-  const shapes = [];
-  const annotations = [];
-  orderBlocks
-    .filter((ob) => chartToggles.ob && chartToggles[ob.scope])
-    .forEach((ob) => {
-      const color = ob.bias === "bullish" ? "34,197,94" : "239,68,68";
-      shapes.push({
-        type: "rect", xref: "x", yref: "y",
-        x0: ob.time, x1: ob.end_time, y0: ob.bottom, y1: ob.top,
-        fillcolor: `rgba(${color},${ob.mitigated ? 0.06 : 0.16})`,
-        line: { color: `rgba(${color},${ob.mitigated ? 0.3 : 0.7})`, width: 1 },
-      });
-      annotations.push({
-        x: ob.time, y: ob.top, xref: "x", yref: "y",
-        text: `OB${ob.mitigated ? " (mitigated)" : ""}`,
-        showarrow: false, xanchor: "left", yanchor: "bottom",
-        font: { color: `rgba(${color},0.9)`, size: 9 },
-        bgcolor: "rgba(15,17,21,0.6)",
-      });
-    });
-  return { shapes, annotations };
-}
-
-function buildFVGShapes(fvgs) {
-  const shapes = [];
-  const annotations = [];
-  if (!chartToggles.fvg) return { shapes, annotations };
-  fvgs.forEach((g) => {
-    const color = g.bias === "bullish" ? "34,197,94" : "239,68,68";
-    const top = Math.max(g.top, g.bottom);
-    const bottom = Math.min(g.top, g.bottom);
-    shapes.push({
-      type: "rect", xref: "x", yref: "y",
-      x0: g.left_time, x1: g.right_time, y0: bottom, y1: top,
-      fillcolor: `rgba(${color},${g.mitigated ? 0.05 : 0.12})`,
-      line: { color: `rgba(${color},${g.mitigated ? 0.25 : 0.55})`, width: 1, dash: "dot" },
-    });
-    annotations.push({
-      x: g.left_time, y: top, xref: "x", yref: "y",
-      text: `FVG${g.mitigated ? " (mitigated)" : ""}`,
-      showarrow: false, xanchor: "left", yanchor: "top",
-      font: { color: `rgba(${color},0.85)`, size: 9 },
-      bgcolor: "rgba(15,17,21,0.6)",
-    });
+// Swing pivot labels (HH/LL/LH/HL): plain relabeling of the engine's own
+// confirmed swing pivots (out["swing_high"]/out["swing_low"]) by
+// comparing each to the previous pivot of the same side - see
+// _compute_swing_pivot_labels in ml_engine.py. HH/LL pivots are exactly
+// the ones a later BOS breaks (continuation); LH/HL pivots are exactly
+// the ones a later CHoCH breaks (reversal) - the BOS/CHoCH arrow text
+// already shows this pairing via "BOS (HH)" / "CHoCH (LH)" etc.
+function buildSwingPivotAnnotations(swingPivots) {
+  if (!chartToggles.swing) return [];
+  return swingPivots.map((p) => {
+    const isHigh = p.kind === "high";
+    const bullishLabel = p.label === "HH" || p.label === "HL";
+    const color = bullishLabel ? "#22c55e" : "#ef4444";
+    return {
+      x: p.time, y: p.price, xref: "x", yref: "y",
+      text: p.label, showarrow: false,
+      yanchor: isHigh ? "bottom" : "top",
+      font: { color, size: 10 },
+      bgcolor: "rgba(15,17,21,0.55)",
+    };
   });
-  return { shapes, annotations };
 }
 
 // IDM (Inducement) markers: not part of the original indicator - this is
@@ -250,8 +220,7 @@ function buildChart() {
   if (orderFlowTrace) traces.push(orderFlowTrace);
 
   const breakAnnotations = buildBreakAnnotations(data.actual_events || []);
-  const obResult = buildOrderBlockShapes(data.order_blocks || []);
-  const fvgResult = buildFVGShapes(data.fair_value_gaps || []);
+  const swingPivotAnnotations = buildSwingPivotAnnotations(data.swing_pivots || []);
   const idmAnnotations = buildIdmAnnotations(data.idm_events || []);
 
   const layout = {
@@ -261,8 +230,7 @@ function buildChart() {
     yaxis: { gridcolor: "#2a2f3a" },
     margin: { t: 30, l: 50, r: 20, b: 40 },
     legend: { orientation: "h" },
-    shapes: [...obResult.shapes, ...fvgResult.shapes],
-    annotations: [...breakAnnotations, ...obResult.annotations, ...fvgResult.annotations, ...idmAnnotations],
+    annotations: [...breakAnnotations, ...swingPivotAnnotations, ...idmAnnotations],
   };
 
   Plotly.react("chart", traces, layout, { responsive: true });
@@ -286,8 +254,6 @@ wireToggle("toggle-choch", "choch");
 wireToggle("toggle-swing", "swing");
 wireToggle("toggle-internal", "internal");
 wireToggle("toggle-pred", "pred");
-wireToggle("toggle-ob", "ob");
-wireToggle("toggle-fvg", "fvg");
 wireToggle("toggle-idm", "idm");
 wireToggle("toggle-orderflow", "orderflow");
 

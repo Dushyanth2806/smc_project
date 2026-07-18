@@ -460,6 +460,57 @@ def load_model_bundle() -> Optional[dict]:
     return joblib.load(MODEL_PATH)
 
 
+# --- Swing pivot classification: HH / LL / LH / HL ---------------------
+# Standard ICT/SMC vocabulary for confirmed swing pivots (out["swing_high"]
+# / out["swing_low"], already computed by the deterministic engine - not
+# new detection, just relabeling existing pivots by comparing each one to
+# the previous pivot of the same side):
+#   HH (Higher High) - swing high above the previous swing high -> uptrend continuation
+#   LL (Lower Low)    - swing low below the previous swing low   -> downtrend continuation
+#   LH (Lower High)   - swing high below the previous swing high -> potential reversal down
+#   HL (Higher Low)   - swing low above the previous swing low   -> potential reversal up
+# This is exactly the classification that determines whether a break is a
+# BOS (HH/LL broken -> trend continues) or a CHoCH (LH/HL broken -> trend
+# reverses), matching the engine's own bias logic one-for-one.
+def _compute_swing_pivot_labels(out: pd.DataFrame) -> list[dict]:
+    highs = out["swing_high"].dropna()
+    lows = out["swing_low"].dropna()
+
+    pivots = []
+    prev_high = None
+    for t, price in highs.items():
+        if prev_high is not None:
+            pivots.append({
+                "time": t.isoformat(), "price": float(price),
+                "label": "HH" if price > prev_high else "LH",
+                "kind": "high",
+            })
+        prev_high = price
+
+    prev_low = None
+    for t, price in lows.items():
+        if prev_low is not None:
+            pivots.append({
+                "time": t.isoformat(), "price": float(price),
+                "label": "LL" if price < prev_low else "HL",
+                "kind": "low",
+            })
+        prev_low = price
+
+    pivots.sort(key=lambda p: p["time"])
+    return pivots
+
+
+def _tag_events_with_pivot_labels(actual_events: list[dict], swing_pivots: list[dict]) -> None:
+    """Mutates swing-scope entries in `actual_events` in place, attaching
+    the HH/LL/LH/HL classification of the pivot each BOS/CHoCH broke -
+    e.g. a swing BOS breaking a prior HH gets pivot_label="HH"."""
+    by_time = {p["time"]: p["label"] for p in swing_pivots}
+    for ev in actual_events:
+        if ev["scope"] == "swing":
+            ev["pivot_label"] = by_time.get(ev["pivot_time"])
+
+
 # --- IDM (Inducement) ------------------------------------------------
 # Not part of the original LuxAlgo Pine script - this is a derived
 # heuristic on top of its own structure_break_events, using the standard
@@ -641,6 +692,9 @@ def predict(raw_df: pd.DataFrame) -> dict:
         for fvg in smc_result.fair_value_gaps
     ]
 
+    swing_pivots = _compute_swing_pivot_labels(out)
+    _tag_events_with_pivot_labels(actual_events, swing_pivots)
+
     idm_events = _compute_idm_events(smc_result.structure_break_events)
     order_flow_events = _compute_order_flow_events(out)
 
@@ -672,6 +726,7 @@ def predict(raw_df: pd.DataFrame) -> dict:
         "actual_events": actual_events,
         "order_blocks": order_blocks,
         "fair_value_gaps": fair_value_gaps,
+        "swing_pivots": swing_pivots,
         "idm_events": idm_events,
         "order_flow_events": order_flow_events,
         "predictions": predictions,
