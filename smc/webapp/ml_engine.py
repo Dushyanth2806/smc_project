@@ -87,7 +87,7 @@ def _smc_config() -> SMCConfig:
     return SMCConfig(
         equal_hl=EqualHighLowConfig(show=True, length=3, threshold=0.1),
         order_blocks=OrderBlockConfig(show_internal=True, show_swing=True),
-        fvg=FairValueGapConfig(show=False),
+        fvg=FairValueGapConfig(show=True),
         zones=PremiumDiscountConfig(show=True),
     )
 
@@ -529,6 +529,43 @@ def predict(raw_df: pd.DataFrame) -> dict:
         for ev in smc_result.structure_break_events
     ]
 
+    # Order blocks and fair value gaps are, like structure_break_events,
+    # detected by the deterministic rule engine (order_blocks.py, fvg.py) -
+    # not the ML model - so these are ground truth, not a forecast.
+    last_bar_time = out.index[-1].isoformat()
+
+    def _ob_dict(ob):
+        mitigated_time = (
+            out.index[ob.mitigated_at_index].isoformat()
+            if ob.mitigated and ob.mitigated_at_index is not None
+            else last_bar_time
+        )
+        return {
+            "top": float(ob.bar_high),
+            "bottom": float(ob.bar_low),
+            "time": pd.Timestamp(ob.bar_time).isoformat(),
+            "end_time": mitigated_time,
+            "bias": "bullish" if ob.bias > 0 else "bearish",
+            "scope": "internal" if ob.internal else "swing",
+            "mitigated": bool(ob.mitigated),
+        }
+
+    order_blocks = [
+        _ob_dict(ob) for ob in smc_result.swing_order_blocks + smc_result.internal_order_blocks
+    ]
+
+    fair_value_gaps = [
+        {
+            "top": float(fvg.top),
+            "bottom": float(fvg.bottom),
+            "left_time": pd.Timestamp(fvg.left_time).isoformat(),
+            "right_time": pd.Timestamp(fvg.right_time).isoformat(),
+            "bias": "bullish" if fvg.bias > 0 else "bearish",
+            "mitigated": bool(fvg.mitigated),
+        }
+        for fvg in smc_result.fair_value_gaps
+    ]
+
     predictions = []
     for i, t in enumerate(out.index):
         if not valid_mask.iloc[i]:
@@ -555,6 +592,8 @@ def predict(raw_df: pd.DataFrame) -> dict:
     return {
         "candles": candles,
         "actual_events": actual_events,
+        "order_blocks": order_blocks,
+        "fair_value_gaps": fair_value_gaps,
         "predictions": predictions,
         "next_bar_forecast": next_bar_forecast,
         "model_metrics": bundle["metrics"],
