@@ -105,7 +105,9 @@
         <button id="toggle-internal" class="toggle active" type="button">Internal (minor)</button>
         <span class="hint" style="margin:0;">Model:</span>
         <button id="toggle-pred" class="toggle active" type="button">Predicted next bar</button>
-        <span class="hint" style="margin:0;">Extra:</span>
+        <span class="hint" style="margin:0;">Zones:</span>
+        <button id="toggle-ob" class="toggle active" type="button">Order Blocks</button>
+        <button id="toggle-fvg" class="toggle active" type="button">Fair Value Gaps</button>
         <button id="toggle-idm" class="toggle active" type="button">IDM</button>
         <button id="toggle-orderflow" class="toggle active" type="button">OrderFlow (approx.)</button>
       </div>
@@ -117,9 +119,9 @@
         "Swing" = long (50-bar) pivot lookback, major structure, rare. "Internal" = short (5-bar) lookback, minor structure, frequent — both are real, rule-based BOS/CHoCH, just drawn smaller.
         Every confirmed swing pivot is labeled <strong>HH</strong> (higher high) / <strong>LL</strong> (lower low) / <strong>LH</strong> (lower high) / <strong>HL</strong> (higher low), toggled with "Swing (major)".
         A later <strong>BOS</strong> always breaks a prior <strong>HH or LL</strong> (trend continuation); a later <strong>CHoCH</strong> always breaks a prior <strong>LH or HL</strong> (trend reversal) — the arrow label shows which, e.g. "BOS (HH)".
+        <strong>Order Blocks</strong> and <strong>Fair Value Gaps</strong> are rule-detected zones (order_blocks.py / fvg.py), same ground-truth guarantee as BOS/CHoCH.
         <strong>IDM (Inducement, amber)</strong> is <em>not</em> in the original indicator — it's a heuristic we added: a minor structure break swept the "wrong" way shortly before a real BOS/CHoCH fires the other way.
         <strong>OrderFlow</strong> is an <em>approximation</em> (no tick/bid-ask data exists here) derived from candle shape + relative volume — treat it as a rough proxy, not real order flow.
-        Order Blocks and Fair Value Gaps are no longer shown on this chart.
       </p>
       <div id="chart"></div>
     </section>
